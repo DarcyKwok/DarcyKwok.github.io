@@ -1,0 +1,1212 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/uploads/favicon.ico?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/uploads/favicon.ico?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="MySQL,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="1、准备　　上一篇的内容学习了如何使用explain来分析SQL的性能问题，通过这个性能分析利器我们就能够对SQL语句进行索引优化，来帮助我们写出更高性能的SQL语句。好了，接下来开始实战吧。">
+<meta name="keywords" content="MySQL">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MySQL高级（四）：索引优化">
+<meta property="og:url" content="http://yoursite.com/2018/06/25/MySQL高级（四）：索引优化/index.html">
+<meta property="og:site_name" content="dx0G&#39;s Blog">
+<meta property="og:description" content="1、准备　　上一篇的内容学习了如何使用explain来分析SQL的性能问题，通过这个性能分析利器我们就能够对SQL语句进行索引优化，来帮助我们写出更高性能的SQL语句。好了，接下来开始实战吧。">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://pavr98rjp.bkt.clouddn.com/images/1529940091659.png">
+<meta property="og:image" content="http://pavr98rjp.bkt.clouddn.com/images/1529939541179.png">
+<meta property="og:image" content="http://pavr98rjp.bkt.clouddn.com/images/1529939925986.png">
+<meta property="og:image" content="http://pavr98rjp.bkt.clouddn.com/images/1529940634245.png">
+<meta property="og:image" content="http://pavr98rjp.bkt.clouddn.com/images/1530022141169.png">
+<meta property="og:image" content="http://pavr98rjp.bkt.clouddn.com/images/1529941265953.png">
+<meta property="og:image" content="http://pavr98rjp.bkt.clouddn.com/images/1530017272528.png">
+<meta property="og:image" content="http://pavr98rjp.bkt.clouddn.com/images/1530020084372.png">
+<meta property="og:image" content="http://pavr98rjp.bkt.clouddn.com/images/1530020998002.png">
+<meta property="og:image" content="http://pavr98rjp.bkt.clouddn.com/images/1530021602849.png">
+<meta property="og:image" content="http://pavr98rjp.bkt.clouddn.com/images/1530022512685.png">
+<meta property="og:image" content="http://pavr98rjp.bkt.clouddn.com/images/1530102408753.png">
+<meta property="og:image" content="http://pavr98rjp.bkt.clouddn.com/images/1530023392134.png">
+<meta property="og:image" content="http://pavr98rjp.bkt.clouddn.com/images/1530025265542.png">
+<meta property="og:updated_time" content="2018-06-27T12:37:44.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="MySQL高级（四）：索引优化">
+<meta name="twitter:description" content="1、准备　　上一篇的内容学习了如何使用explain来分析SQL的性能问题，通过这个性能分析利器我们就能够对SQL语句进行索引优化，来帮助我们写出更高性能的SQL语句。好了，接下来开始实战吧。">
+<meta name="twitter:image" content="http://pavr98rjp.bkt.clouddn.com/images/1529940091659.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2018/06/25/MySQL高级（四）：索引优化/">
+
+
+
+
+
+  <title>MySQL高级（四）：索引优化 | dx0G's Blog</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">dx0G's Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle">代码狗</p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br>
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br>
+            
+            关于
+          </a>
+        </li>
+      
+
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>
+            
+            搜索
+          </a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="搜索..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/06/25/MySQL高级（四）：索引优化/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="dx0G">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/uploads/avatar.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="dx0G's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">MySQL高级（四）：索引优化</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-06-25T20:38:49+08:00">
+                2018-06-25
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/MySQL/" itemprop="url" rel="index">
+                    <span itemprop="name">MySQL</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="1、准备"><a href="#1、准备" class="headerlink" title="1、准备"></a>1、准备</h2><p>　　上一篇的内容学习了如何使用<code>explain</code>来分析<code>SQL</code>的性能问题，通过这个性能分析利器我们就能够对<code>SQL</code>语句进行索引优化，来帮助我们写出更高性能的<code>SQL</code>语句。好了，接下来开始实战吧。<a id="more"></a></p>
+<p>　　首先创建一张表：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> staffs(</span><br><span class="line">    <span class="keyword">id</span> <span class="built_in">int</span> primary <span class="keyword">key</span> auto_increment,</span><br><span class="line">    <span class="keyword">name</span> <span class="built_in">varchar</span>(<span class="number">24</span>) <span class="keyword">not</span> <span class="literal">null</span> <span class="keyword">default</span> <span class="string">''</span> <span class="keyword">comment</span> <span class="string">'姓名'</span>,</span><br><span class="line">    age <span class="built_in">int</span> <span class="keyword">not</span> <span class="literal">null</span> <span class="keyword">default</span> <span class="number">0</span> <span class="keyword">comment</span> <span class="string">'年龄'</span>,</span><br><span class="line">    pos <span class="built_in">varchar</span>(<span class="number">20</span>) <span class="keyword">not</span> <span class="literal">null</span> <span class="keyword">default</span> <span class="string">''</span> <span class="keyword">comment</span> <span class="string">'职位'</span>,</span><br><span class="line">    add_time <span class="built_in">timestamp</span> <span class="keyword">not</span> <span class="literal">null</span> <span class="keyword">default</span> <span class="keyword">current_timestamp</span> <span class="keyword">comment</span> <span class="string">'入职时间'</span></span><br><span class="line">  ) <span class="keyword">charset</span> utf8 <span class="keyword">comment</span> <span class="string">'员工记录表'</span>;</span><br></pre></td></tr></table></figure>
+<p>　　接着添加三列符合索引：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> staffs <span class="keyword">add</span> <span class="keyword">index</span> idx_nap(<span class="keyword">name</span>, age, pos);</span><br></pre></td></tr></table></figure>
+<h2 id="2、索引优化"><a href="#2、索引优化" class="headerlink" title="2、索引优化"></a>2、索引优化</h2><h3 id="全值匹配"><a href="#全值匹配" class="headerlink" title="全值匹配"></a>全值匹配</h3><p><img src="http://pavr98rjp.bkt.clouddn.com/images/1529940091659.png" alt="1529940091659"></p>
+<p>　　<code>type</code>为ref，<code>key</code>为<code>idx_nap</code>，<code>ref</code>为<code>const,const,const</code>表示使用了非唯一性索引，也就是自己创建的<code>idx_nap</code>索引，并且使用了全部索引列。</p>
+<h3 id="最左前缀原则（重要）"><a href="#最左前缀原则（重要）" class="headerlink" title="最左前缀原则（重要）"></a>最左前缀原则（重要）</h3><p>　　最左前缀原则指的是复合索引从左边为起点任何<strong>连续</strong>的索引都能匹配上。从索引的最左边开始，如果中间断了，断了那个索引列的左边部分索引生效，后面的索引列就不生效了。如果不是从最左边开始的，那么索引不会生效。</p>
+<p><img src="http://pavr98rjp.bkt.clouddn.com/images/1529939541179.png" alt="1529939541179"></p>
+<p>　　<code>key</code>为<code>idx_nap</code>表示使用了索引，但是看<code>key_len</code>长度和全值匹配的长度要少，说明该索引只使用了部分索引列，上图语句中由于断了<code>age</code>，所以实际上只用到了<code>name</code>索引列。</p>
+<p><img src="http://pavr98rjp.bkt.clouddn.com/images/1529939925986.png" alt="1529939925986"></p>
+<p>　　<code>type</code>为ALL进行了全表扫描，索引失效，因为违背了最左前缀原则即没有从索引的最左边的索引列开始。</p>
+<h3 id="不在索引列上做操作"><a href="#不在索引列上做操作" class="headerlink" title="不在索引列上做操作"></a>不在索引列上做操作</h3><p>　　不要在索引列上做操作，包括计算、函数、自动或者手动类型转换，这样会导致索引失效而转向全表扫描。</p>
+<p>　　例如下图在索引列上使用了函数导致了索引失效：</p>
+<p><img src="http://pavr98rjp.bkt.clouddn.com/images/1529940634245.png" alt="1529940634245"></p>
+<p>　　<code>varchar</code>类型的字段千万不能少了引号，会导致隐式类型转换，索引失效。</p>
+<p><img src="http://pavr98rjp.bkt.clouddn.com/images/1530022141169.png" alt="1530022141169"></p>
+<h3 id="范围之后全失效"><a href="#范围之后全失效" class="headerlink" title="范围之后全失效"></a>范围之后全失效</h3><p>　　索引列使用范围查找，那么该索引列之后的索引列会失效。</p>
+<p>　　例如下图<code>age</code>使用了范围查找，<code>type</code>为<code>range</code>，<code>key</code>为<code>idx_nap</code>，<code>key_len</code>比全值匹配中的长度要少，说明用到了索引，但是<code>age</code>后面的索引列并没有生效。</p>
+<p><img src="http://pavr98rjp.bkt.clouddn.com/images/1529941265953.png" alt="1529941265953"></p>
+<h3 id="使用覆盖索引"><a href="#使用覆盖索引" class="headerlink" title="使用覆盖索引"></a>使用覆盖索引</h3><p>　　我们在写查询语句时，尽量不要使用<code>select *</code>，最好用覆盖索引去查找。</p>
+<p>　　下图第二条语句与第一条语句相比使用了覆盖索引，在<code>Extra</code>字段上显示<code>Using index</code>，性能比第一条要好。</p>
+<p>　　第三条使用了范围查找，根据上面所学<code>type</code>应该是<code>range</code>且索引列用到了<code>name</code>和<code>age</code>，但是这里用到了覆盖索引，<code>type</code>为<code>ref</code>级别，索引列用到了<code>name</code>，虽然索引列只用到了一个，但是<code>type</code>为<code>ref</code>显然比<code>range</code>要好。</p>
+<p>　　第五条语句与第四条语句相比说明<code>select</code>查找的列是索引的全部和部分都能使用覆盖索引。</p>
+<p><img src="http://pavr98rjp.bkt.clouddn.com/images/1530017272528.png" alt="1530017272528"></p>
+<h3 id="不要使用不等于"><a href="#不要使用不等于" class="headerlink" title="不要使用不等于"></a>不要使用不等于</h3><p>　　使用!=或者&lt;&gt;会导致索引失效而使用全表扫描，如图所示。</p>
+<p><img src="http://pavr98rjp.bkt.clouddn.com/images/1530020084372.png" alt="1530020084372"></p>
+<h3 id="like查询不要以通配符开头"><a href="#like查询不要以通配符开头" class="headerlink" title="like查询不要以通配符开头"></a>like查询不要以通配符开头</h3><p>　　使用<code>like</code>查询时，如果以通配符开头<code>%abc</code>，那么索引也会失效导致全表扫描。</p>
+<p><img src="http://pavr98rjp.bkt.clouddn.com/images/1530020998002.png" alt="1530020998002"></p>
+<p>　　但是如果业务中非得使用通配符开头的话，我们可以使用覆盖索引来解决索引失效问题。</p>
+<p><img src="http://pavr98rjp.bkt.clouddn.com/images/1530021602849.png" alt="1530021602849"></p>
+<h3 id="少用or或in"><a href="#少用or或in" class="headerlink" title="少用or或in"></a>少用or或in</h3><p>　　使用or或者in也会导致索引失效。</p>
+<p><img src="http://pavr98rjp.bkt.clouddn.com/images/1530022512685.png" alt="1530022512685"></p>
+<h3 id="索引对排序的影响"><a href="#索引对排序的影响" class="headerlink" title="索引对排序的影响"></a>索引对排序的影响</h3><p>　　通过之前的学习，我们了解到索引具有排序功能，如果能够利用索引的排序功能对SQL进行排序，也能提高SQL的查询速度。如果不能利用索引的排序功能，MySQL就得自己实现排序功能来满足用户需求，这时通过<code>explain</code>执行计划会发现<code>Extra</code>那一栏出现<code>Using filesort</code>。所以我们在优化SQL时，应该尽量使用索引排序，避免<code>Using filesort</code>。</p>
+<p>　　<code>order by</code>满足两种情况会使用索引进行排序，第一种<code>order by</code>满足索引最左前缀原则，第二种使用<code>where</code>子句与<code>order by</code>子句组合满足最左前缀原则。</p>
+<p><img src="http://pavr98rjp.bkt.clouddn.com/images/1530102408753.png" alt="1530102408753"></p>
+<h3 id="索引对分组的影响"><a href="#索引对分组的影响" class="headerlink" title="索引对分组的影响"></a>索引对分组的影响</h3><p>　　<code>group by</code>的实质是先排序后分组，<code>group by</code>使用索引也是遵循最左前缀原则，还有就是能写在<code>where</code>的限定条件就不要用<code>having</code>去限定了。</p>
+<h2 id="3、补充"><a href="#3、补充" class="headerlink" title="3、补充"></a>3、补充</h2><p>　　下面注意这种写法，这种写法虽然看起来比较怪异，但是其实是满足最左前缀原则的， MySQL查询优化器会帮我们优化好顺序。</p>
+<p><img src="http://pavr98rjp.bkt.clouddn.com/images/1530023392134.png" alt="1530023392134"></p>
+<p>　　下图的语句中，<code>like</code>为范围查找，根据范围之后全失效，索引列应该只用到了一个，但是实际上全部都用到了，因为<code>like</code>后跟的是<code>Ju%</code>，通配符前面其实是常量了，后面的索引列可以用上。如果<code>like</code>后跟的是<code>%abc%</code>或者<code>%abc</code>，那么这样是范围了，满足范围以后全失效。</p>
+<p><img src="http://pavr98rjp.bkt.clouddn.com/images/1530025265542.png" alt="1530025265542"></p>
+<h2 id="4、建议"><a href="#4、建议" class="headerlink" title="4、建议"></a>4、建议</h2><ul>
+<li>对于单值索引，尽量选择针对当前query过滤性更好的索引。</li>
+<li>在选择组合索引的时候，当前Query中过滤性最好的字段在索引字段顺序中，位置越靠前越好。</li>
+<li>在选择组合索引的时候，尽量选择可以能包含当前query中的where子句中更多字段的索引。</li>
+<li>尽可能通过分析统计信息和调整query的写法来达到选择合适索引的目的。</li>
+</ul>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+	
+	<div>
+	  
+	  <div>
+    
+        <div style="text-align:center;color: #ccc;font-size:14px;">
+            -------------本文结束
+            <i class="fa fa-paw"></i>
+            感谢您的阅读-------------
+        </div>
+    
+</div>
+	  
+	</div>
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/MySQL/" rel="tag"><i class="fa fa-tag"></i> MySQL</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2018/06/24/MySQL高级（三）：explain介绍/" rel="next" title="MySQL高级（三）：explain介绍">
+                <i class="fa fa-chevron-left"></i> MySQL高级（三）：explain介绍
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2018/06/27/MySQL高级（五）：数据库锁机制/" rel="prev" title="MySQL高级（五）：数据库锁机制">
+                MySQL高级（五）：数据库锁机制 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+      <div id="lv-container" data-id="city" data-uid="MTAyMC8zNzU4MC8xNDExMg=="></div>
+    </div>
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/uploads/avatar.jpg" alt="dx0G">
+            
+              <p class="site-author-name" itemprop="name">dx0G</p>
+              <p class="site-description motion-element" itemprop="description">代码狗的进阶之路</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives">
+              
+                  <span class="site-state-item-count">14</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">4</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">4</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/DarcyKwok" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="mailto:guoxu0615@gmail.com" target="_blank" title="E-Mail">
+                      
+                        <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#1、准备"><span class="nav-text">1、准备</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2、索引优化"><span class="nav-text">2、索引优化</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#全值匹配"><span class="nav-text">全值匹配</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#最左前缀原则（重要）"><span class="nav-text">最左前缀原则（重要）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#不在索引列上做操作"><span class="nav-text">不在索引列上做操作</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#范围之后全失效"><span class="nav-text">范围之后全失效</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#使用覆盖索引"><span class="nav-text">使用覆盖索引</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#不要使用不等于"><span class="nav-text">不要使用不等于</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#like查询不要以通配符开头"><span class="nav-text">like查询不要以通配符开头</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#少用or或in"><span class="nav-text">少用or或in</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#索引对排序的影响"><span class="nav-text">索引对排序的影响</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#索引对分组的影响"><span class="nav-text">索引对分组的影响</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3、补充"><span class="nav-text">3、补充</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4、建议"><span class="nav-text">4、建议</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">dx0G</span>
+
+  
+</div>
+
+
+
+
+
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+    <script type="text/javascript">
+      (function(d, s) {
+        var j, e = d.getElementsByTagName(s)[0];
+        if (typeof LivereTower === 'function') { return; }
+        j = d.createElement(s);
+        j.src = 'https://cdn-city.livere.com/js/embed.dist.js';
+        j.async = true;
+        e.parentNode.insertBefore(j, e);
+      })(document, 'script');
+    </script>
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  <script type="text/javascript">
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.xml";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url);
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x" /></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x" /></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+  
+  
+	<script type="text/javascript" src="//cdn.bootcss.com/canvas-nest.js/1.0.0/canvas-nest.min.js"></script>
+  
+  <!--<script type="text/javascript" src="/js/src/love.js"></script>-->
+  
+   <canvas class="fireworks" style="position: fixed;left: 0;top: 0;z-index: 1; pointer-events: none;"></canvas> 
+   <script type="text/javascript" src="//cdn.bootcss.com/animejs/2.2.0/anime.min.js"></script> 
+   <script type="text/javascript" src="/js/src/fireworks.js"></script>
+  
+</body>
+</html>

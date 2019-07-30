@@ -1,0 +1,1302 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/uploads/favicon.ico?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/uploads/favicon.ico?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="MySQL,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="1、概述　　锁是计算机协调多个进程或纯线程并发访问某一资源的机制。 在数据库中，数据是可以供多个用户共享的，在并发环境下，为了保证数据的一致性和有效性必须要使用锁机制。举个生活中的例子，我们在电商网站上购物时，如果库存只有一个了，但是这个时候还有其他人要买，为了保证只有一个人购买到这件商品，这时我们就得使用数据库锁了。">
+<meta name="keywords" content="MySQL">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MySQL高级（五）：数据库锁机制">
+<meta property="og:url" content="http://yoursite.com/2018/06/27/MySQL高级（五）：数据库锁机制/index.html">
+<meta property="og:site_name" content="dx0G&#39;s Blog">
+<meta property="og:description" content="1、概述　　锁是计算机协调多个进程或纯线程并发访问某一资源的机制。 在数据库中，数据是可以供多个用户共享的，在并发环境下，为了保证数据的一致性和有效性必须要使用锁机制。举个生活中的例子，我们在电商网站上购物时，如果库存只有一个了，但是这个时候还有其他人要买，为了保证只有一个人购买到这件商品，这时我们就得使用数据库锁了。">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="http://pavr98rjp.bkt.clouddn.com/images/1.png">
+<meta property="og:image" content="http://pavr98rjp.bkt.clouddn.com/images/2.png">
+<meta property="og:image" content="http://pavr98rjp.bkt.clouddn.com/images/2.png">
+<meta property="og:image" content="http://pavr98rjp.bkt.clouddn.com/images/4.png">
+<meta property="og:image" content="http://pavr98rjp.bkt.clouddn.com/images/5.png">
+<meta property="og:image" content="http://pavr98rjp.bkt.clouddn.com/images/6.png">
+<meta property="og:image" content="http://pavr98rjp.bkt.clouddn.com/images/7.png">
+<meta property="og:image" content="http://pavr98rjp.bkt.clouddn.com/8.png">
+<meta property="og:image" content="http://pavr98rjp.bkt.clouddn.com/9.png">
+<meta property="og:image" content="http://pavr98rjp.bkt.clouddn.com/10.png">
+<meta property="og:image" content="http://pavr98rjp.bkt.clouddn.com/11.png">
+<meta property="og:image" content="http://pavr98rjp.bkt.clouddn.com/12.png">
+<meta property="og:image" content="http://pavr98rjp.bkt.clouddn.com/13.png">
+<meta property="og:image" content="http://pavr98rjp.bkt.clouddn.com/14.png">
+<meta property="og:image" content="http://pavr98rjp.bkt.clouddn.com/15.png">
+<meta property="og:image" content="http://pavr98rjp.bkt.clouddn.com/16.png">
+<meta property="og:image" content="http://pavr98rjp.bkt.clouddn.com/images/17.png">
+<meta property="og:image" content="http://pavr98rjp.bkt.clouddn.com/images/18.png">
+<meta property="og:image" content="http://pavr98rjp.bkt.clouddn.com/images/19.png">
+<meta property="og:image" content="http://pavr98rjp.bkt.clouddn.com/images/20.png">
+<meta property="og:image" content="http://pavr98rjp.bkt.clouddn.com/images/21.png">
+<meta property="og:image" content="http://pavr98rjp.bkt.clouddn.com/images/22.png">
+<meta property="og:image" content="http://pavr98rjp.bkt.clouddn.com/images/23.png">
+<meta property="og:image" content="http://pavr98rjp.bkt.clouddn.com/images/24.png">
+<meta property="og:image" content="http://pavr98rjp.bkt.clouddn.com/images/25.png">
+<meta property="og:image" content="e:/26.png">
+<meta property="og:updated_time" content="2018-07-01T07:03:54.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="MySQL高级（五）：数据库锁机制">
+<meta name="twitter:description" content="1、概述　　锁是计算机协调多个进程或纯线程并发访问某一资源的机制。 在数据库中，数据是可以供多个用户共享的，在并发环境下，为了保证数据的一致性和有效性必须要使用锁机制。举个生活中的例子，我们在电商网站上购物时，如果库存只有一个了，但是这个时候还有其他人要买，为了保证只有一个人购买到这件商品，这时我们就得使用数据库锁了。">
+<meta name="twitter:image" content="http://pavr98rjp.bkt.clouddn.com/images/1.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2018/06/27/MySQL高级（五）：数据库锁机制/">
+
+
+
+
+
+  <title>MySQL高级（五）：数据库锁机制 | dx0G's Blog</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">dx0G's Blog</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle">代码狗</p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br>
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br>
+            
+            关于
+          </a>
+        </li>
+      
+
+      
+        <li class="menu-item menu-item-search">
+          
+            <a href="javascript:;" class="popup-trigger">
+          
+            
+              <i class="menu-item-icon fa fa-search fa-fw"></i> <br>
+            
+            搜索
+          </a>
+        </li>
+      
+    </ul>
+  
+
+  
+    <div class="site-search">
+      
+  <div class="popup search-popup local-search-popup">
+  <div class="local-search-header clearfix">
+    <span class="search-icon">
+      <i class="fa fa-search"></i>
+    </span>
+    <span class="popup-btn-close">
+      <i class="fa fa-times-circle"></i>
+    </span>
+    <div class="local-search-input-wrapper">
+      <input autocomplete="off" placeholder="搜索..." spellcheck="false" type="text" id="local-search-input">
+    </div>
+  </div>
+  <div id="local-search-result"></div>
+</div>
+
+
+
+    </div>
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2018/06/27/MySQL高级（五）：数据库锁机制/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="dx0G">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/uploads/avatar.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="dx0G's Blog">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">MySQL高级（五）：数据库锁机制</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2018-06-27T20:53:11+08:00">
+                2018-06-27
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/MySQL/" itemprop="url" rel="index">
+                    <span itemprop="name">MySQL</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="1、概述"><a href="#1、概述" class="headerlink" title="1、概述"></a>1、概述</h2><p>　　<strong>锁是计算机协调多个进程或纯线程并发访问某一资源的机制。</strong> 在数据库中，数据是可以供多个用户共享的，在并发环境下，为了保证数据的一致性和有效性必须要使用锁机制。举个生活中的例子，我们在电商网站上购物时，如果库存只有一个了，但是这个时候还有其他人要买，为了保证只有一个人购买到这件商品，这时我们就得使用数据库锁了。<a id="more"></a></p>
+<h2 id="2、锁的分类"><a href="#2、锁的分类" class="headerlink" title="2、锁的分类"></a>2、锁的分类</h2><p>　　从数据操作的类型分：</p>
+<ul>
+<li><strong>读锁（共享锁）</strong>：针对同一份数据，多个读操作可以同时进行而不会互相影响。</li>
+<li><strong>写锁（排它锁）</strong>：当前写操作没有完成前，它会阻断其他写锁和读锁。</li>
+</ul>
+<p>　　从对数据操作的颗粒度分：</p>
+<ul>
+<li><strong>表锁</strong></li>
+<li><strong>行锁</strong></li>
+</ul>
+<h2 id="3、锁"><a href="#3、锁" class="headerlink" title="3、锁"></a>3、锁</h2><h3 id="3-1、表锁"><a href="#3-1、表锁" class="headerlink" title="3.1、表锁"></a>3.1、表锁</h3><p>　　特点：偏向MyISAM存储引擎，开销小，加锁快，无死锁，锁定的粒度大，但是发生锁冲突的概率高，并发量低。</p>
+<p>　　建表并插入一些数据：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> mylock(</span><br><span class="line">	<span class="keyword">id</span> <span class="built_in">int</span> <span class="keyword">not</span> <span class="literal">null</span> primary <span class="keyword">key</span> auto_increment,</span><br><span class="line">    <span class="keyword">name</span> <span class="built_in">varchar</span>(<span class="number">20</span>)</span><br><span class="line">) <span class="keyword">engine</span> myisam;</span><br><span class="line"></span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> mylock(<span class="keyword">name</span>) <span class="keyword">values</span>(<span class="string">'a'</span>);</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> mylock(<span class="keyword">name</span>) <span class="keyword">values</span>(<span class="string">'b'</span>);</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> mylock(<span class="keyword">name</span>) <span class="keyword">values</span>(<span class="string">'c'</span>);</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> mylock(<span class="keyword">name</span>) <span class="keyword">values</span>(<span class="string">'d'</span>);</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> mylock(<span class="keyword">name</span>) <span class="keyword">values</span>(<span class="string">'e'</span>);</span><br></pre></td></tr></table></figure>
+<p>　　<strong>读锁：</strong></p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">Session1</th>
+<th style="text-align:left">Session2</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">获得表mylock的read锁<br><img src="http://pavr98rjp.bkt.clouddn.com/images/1.png" alt="1530112713472"></td>
+<td style="text-align:left">连接终端</td>
+</tr>
+<tr>
+<td style="text-align:left">当前session可以查询该表记录<br><img src="http://pavr98rjp.bkt.clouddn.com/images/2.png" alt="1530112747190"></td>
+<td style="text-align:left">其他session也可以查询该表的记录<br><img src="http://pavr98rjp.bkt.clouddn.com/images/2.png" alt="1530112780637"></td>
+</tr>
+<tr>
+<td style="text-align:left">当前session不能查询其他表<br><img src="http://pavr98rjp.bkt.clouddn.com/images/4.png" alt="1530112877090"></td>
+<td style="text-align:left">其他session可以增删改查其他表<br><img src="http://pavr98rjp.bkt.clouddn.com/images/5.png" alt="1530113009259"></td>
+</tr>
+<tr>
+<td style="text-align:left">当前session插入或者更新<strong>锁定的表</strong>都会报错<br><img src="http://pavr98rjp.bkt.clouddn.com/images/6.png" alt="1530112905434"></td>
+<td style="text-align:left">其他session插入或者更新<strong>锁定的表</strong>会一直等待获得锁<br><img src="http://pavr98rjp.bkt.clouddn.com/images/7.png" alt="1530113079409"></td>
+</tr>
+<tr>
+<td style="text-align:left">释放锁<br><img src="http://pavr98rjp.bkt.clouddn.com/8.png" alt="1530112946626"></td>
+<td style="text-align:left">session2获得了锁，插入操作完成<br><img src="http://pavr98rjp.bkt.clouddn.com/9.png" alt="1530113114230"></td>
+</tr>
+</tbody>
+</table>
+<p>　　<strong>写锁：</strong></p>
+<table>
+<thead>
+<tr>
+<th>Session1</th>
+<th>Session2</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>获得表mylock的write锁<br><img src="http://pavr98rjp.bkt.clouddn.com/10.png" alt="1530188985850"></td>
+<td>连接终端</td>
+</tr>
+<tr>
+<td>当前session不能查询其他表<br><img src="http://pavr98rjp.bkt.clouddn.com/11.png" alt="1530189421205"></td>
+<td>当前session可以查询其他表<br><img src="http://pavr98rjp.bkt.clouddn.com/12.png" alt="1530189459715"></td>
+</tr>
+<tr>
+<td>当前session对<strong>锁定的表</strong>的增删改查操作都可以执行<br><img src="http://pavr98rjp.bkt.clouddn.com/13.png" alt="1530189180042"></td>
+<td>当前session对<strong>锁定的表</strong>进行操作会阻塞<br><img src="http://pavr98rjp.bkt.clouddn.com/14.png" alt="1530189583062"></td>
+</tr>
+<tr>
+<td>释放锁<br><img src="http://pavr98rjp.bkt.clouddn.com/15.png" alt="1530189615488"></td>
+<td>session2获得锁，得到查询结果<br><img src="http://pavr98rjp.bkt.clouddn.com/16.png" alt="1530189661975"></td>
+</tr>
+</tbody>
+</table>
+<p>　　<strong>表锁总结：</strong></p>
+<p>　　MyISAM在执行查询语句前，会自动给所有涉及到的表加读锁，在执行增删改操作前，会自动给所有涉及到的表加写锁。</p>
+<p>　　MySQL的表级锁有两种模式：<strong>表共享读锁</strong>和<strong>表独占写锁</strong></p>
+<p>　　加读锁不会阻塞其他线程对同一表的读请求，但会阻塞对同一表的写请求，只有当读锁释放后，才会执行其他线程的写操作。</p>
+<p>　　加写锁会阻塞其他线程对同一表的读和写操作，只有当写锁释放后，才会执行其他线程的读写操作。</p>
+<p>　　所以MyISAM适合大量查询的环境，不适合频繁更新，高并发的情况。</p>
+<h3 id="3-2、行锁"><a href="#3-2、行锁" class="headerlink" title="3.2、行锁"></a>3.2、行锁</h3><p>　　特点：偏向InnoDB存储引擎，开销大，加锁慢，会出现死锁，锁定粒度最小，发生锁冲突的概率最低，并发度也最高。</p>
+<p>　　建表并插入一些数据：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> test_innodb_lock(</span><br><span class="line">    a <span class="built_in">int</span>(<span class="number">11</span>) primary <span class="keyword">key</span>,</span><br><span class="line">    b <span class="built_in">varchar</span>(<span class="number">16</span>)</span><br><span class="line">)<span class="keyword">engine</span>=<span class="keyword">innodb</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">create</span> <span class="keyword">index</span> idx_b <span class="keyword">on</span> test_innodb_lock(b);</span><br><span class="line"></span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> test_innodb_lock <span class="keyword">values</span>(<span class="number">1</span>,<span class="string">'1000'</span>);</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> test_innodb_lock <span class="keyword">values</span>(<span class="number">2</span>,<span class="string">'2000'</span>);</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> test_innodb_lock <span class="keyword">values</span>(<span class="number">3</span>,<span class="string">'3000'</span>);</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> test_innodb_lock <span class="keyword">values</span>(<span class="number">4</span>,<span class="string">'4000'</span>);</span><br></pre></td></tr></table></figure>
+<p>　　行锁演示：</p>
+<table>
+<thead>
+<tr>
+<th>Session1</th>
+<th>Session2</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>为了更好演示，把MySQL自动提交取消<br><img src="http://pavr98rjp.bkt.clouddn.com/images/17.png" alt="1530192998613"></td>
+<td>为了更好演示，把MySQL自动提交取消<br><img src="http://pavr98rjp.bkt.clouddn.com/images/18.png" alt="1530192998613"></td>
+</tr>
+<tr>
+<td>更新但是未提交<br><img src="http://pavr98rjp.bkt.clouddn.com/images/19.png" alt="1530193167361"></td>
+<td>session2被阻塞，只能等待<br><img src="http://pavr98rjp.bkt.clouddn.com/images/20.png" alt="1530193307820"></td>
+</tr>
+<tr>
+<td>提交更新<br><img src="http://pavr98rjp.bkt.clouddn.com/images/21.png" alt="1530193368439"></td>
+<td>解除阻塞，更新完成<br><img src="http://pavr98rjp.bkt.clouddn.com/images/22.png" alt="1530193406202"></td>
+</tr>
+<tr>
+<td>更新a=1<br><img src="http://pavr98rjp.bkt.clouddn.com/images/23.png" alt="1530194443216"></td>
+<td>更新a=3，不会阻塞<br><img src="http://pavr98rjp.bkt.clouddn.com/images/24.png" alt="1530194473946"></td>
+</tr>
+</tbody>
+</table>
+<p>　　InnoDB存储引擎会在对某一行数据进行写操作时加锁，如果其他线程也对这一行数据进行写操作，那么就会阻塞等待获得锁。如果两个线程操作的是不同行的数据，那么互不影响。</p>
+<p>　　另外特别要注意的是InnoDB行锁是通过索引上的索引项来实现的，如果没有使用索引或者索引失效，InnoDB将会使用<strong>表锁</strong>。如下图所示索引失效情况：</p>
+<p><img src="http://pavr98rjp.bkt.clouddn.com/images/25.png" alt="1530196118468"></p>
+<p>　　<strong>间隙锁：</strong>当我们用范围条件而不是相等条件检索数据，并请求共享或排他锁时，InnoDB会给符合条件的已有数据记录的索引项加锁；对于值在条件范围内但并不存在的记录叫做“间隙”，InnoDB也会对这个“间隙”加锁，这种锁机制就是所谓的间隙锁（Next-Key锁）。</p>
+<p>　　间隙锁有一个致命的弱点，就是当锁定一个范围键值后，即时某些不存在的键值也会被锁定，而造成在锁定的时候无法插入锁定键值范围内的任何数据，在某些场景下可能会对性能造成很大的危害。</p>
+<p><img src="E:\26.png" alt="1530198702710"></p>
+<p>　　如上图所示，session1使用的是范围条件，而id为5的记录并不存在，session2插入id为5的记录结果被阻塞了。</p>
+<p>　　<strong>优化建议：</strong></p>
+<ul>
+<li>尽可能让所有数据检索都通过索引来完成，避免无索引行锁升级为表锁</li>
+<li>精心设计索引，并尽量使用索引访问数据，使加锁更精确，从而减少锁冲突的机会 </li>
+<li>尽量用相等条件访问数据，这样可以避免间隙锁对并发插入的影响。</li>
+<li>尽量控制事务大小，减少锁定资源量和时间长度</li>
+<li>尽可能低级别事务隔离</li>
+</ul>
+<p>　　<strong>行锁总结：</strong></p>
+<p>　　InnoDB行锁虽然在锁定机制的实现方面比表锁损耗要高，但是在并发能力上看，行锁比表锁要优秀得多，所以在系统并发量较高的时候，InnoDB的整体性能要优于MyISAM。但是行锁也有脆弱的一面，当我们使用不当到底时候，可能会让InnoDB的整体性能表现不仅不能比MyISAM要好，反而更差。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+	
+	<div>
+	  
+	  <div>
+    
+        <div style="text-align:center;color: #ccc;font-size:14px;">
+            -------------本文结束
+            <i class="fa fa-paw"></i>
+            感谢您的阅读-------------
+        </div>
+    
+</div>
+	  
+	</div>
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/MySQL/" rel="tag"><i class="fa fa-tag"></i> MySQL</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2018/06/25/MySQL高级（四）：索引优化/" rel="next" title="MySQL高级（四）：索引优化">
+                <i class="fa fa-chevron-left"></i> MySQL高级（四）：索引优化
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2018/07/01/ArrayList源码分析/" rel="prev" title="ArrayList源码分析">
+                ArrayList源码分析 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+      <div id="lv-container" data-id="city" data-uid="MTAyMC8zNzU4MC8xNDExMg=="></div>
+    </div>
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/uploads/avatar.jpg" alt="dx0G">
+            
+              <p class="site-author-name" itemprop="name">dx0G</p>
+              <p class="site-description motion-element" itemprop="description">代码狗的进阶之路</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives">
+              
+                  <span class="site-state-item-count">14</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">4</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">4</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+            <div class="links-of-author motion-element">
+                
+                  <span class="links-of-author-item">
+                    <a href="https://github.com/DarcyKwok" target="_blank" title="GitHub">
+                      
+                        <i class="fa fa-fw fa-github"></i>GitHub</a>
+                  </span>
+                
+                  <span class="links-of-author-item">
+                    <a href="mailto:guoxu0615@gmail.com" target="_blank" title="E-Mail">
+                      
+                        <i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                  </span>
+                
+            </div>
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#1、概述"><span class="nav-text">1、概述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2、锁的分类"><span class="nav-text">2、锁的分类</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3、锁"><span class="nav-text">3、锁</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#3-1、表锁"><span class="nav-text">3.1、表锁</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-2、行锁"><span class="nav-text">3.2、行锁</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">dx0G</span>
+
+  
+</div>
+
+
+
+
+
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+
+  <script type="text/javascript" src="/js/src/affix.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/schemes/pisces.js?v=5.1.4"></script>
+
+
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+    <script type="text/javascript">
+      (function(d, s) {
+        var j, e = d.getElementsByTagName(s)[0];
+        if (typeof LivereTower === 'function') { return; }
+        j = d.createElement(s);
+        j.src = 'https://cdn-city.livere.com/js/embed.dist.js';
+        j.async = true;
+        e.parentNode.insertBefore(j, e);
+      })(document, 'script');
+    </script>
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  <script type="text/javascript">
+    // Popup Window;
+    var isfetched = false;
+    var isXml = true;
+    // Search DB path;
+    var search_path = "search.xml";
+    if (search_path.length === 0) {
+      search_path = "search.xml";
+    } else if (/json$/i.test(search_path)) {
+      isXml = false;
+    }
+    var path = "/" + search_path;
+    // monitor main search box;
+
+    var onPopupClose = function (e) {
+      $('.popup').hide();
+      $('#local-search-input').val('');
+      $('.search-result-list').remove();
+      $('#no-result').remove();
+      $(".local-search-pop-overlay").remove();
+      $('body').css('overflow', '');
+    }
+
+    function proceedsearch() {
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay"></div>')
+        .css('overflow', 'hidden');
+      $('.search-popup-overlay').click(onPopupClose);
+      $('.popup').toggle();
+      var $localSearchInput = $('#local-search-input');
+      $localSearchInput.attr("autocapitalize", "none");
+      $localSearchInput.attr("autocorrect", "off");
+      $localSearchInput.focus();
+    }
+
+    // search function;
+    var searchFunc = function(path, search_id, content_id) {
+      'use strict';
+
+      // start loading animation
+      $("body")
+        .append('<div class="search-popup-overlay local-search-pop-overlay">' +
+          '<div id="search-loading-icon">' +
+          '<i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>' +
+          '</div>' +
+          '</div>')
+        .css('overflow', 'hidden');
+      $("#search-loading-icon").css('margin', '20% auto 0 auto').css('text-align', 'center');
+
+      $.ajax({
+        url: path,
+        dataType: isXml ? "xml" : "json",
+        async: true,
+        success: function(res) {
+          // get the contents from search data
+          isfetched = true;
+          $('.popup').detach().appendTo('.header-inner');
+          var datas = isXml ? $("entry", res).map(function() {
+            return {
+              title: $("title", this).text(),
+              content: $("content",this).text(),
+              url: $("url" , this).text()
+            };
+          }).get() : res;
+          var input = document.getElementById(search_id);
+          var resultContent = document.getElementById(content_id);
+          var inputEventFunction = function() {
+            var searchText = input.value.trim().toLowerCase();
+            var keywords = searchText.split(/[\s\-]+/);
+            if (keywords.length > 1) {
+              keywords.push(searchText);
+            }
+            var resultItems = [];
+            if (searchText.length > 0) {
+              // perform local searching
+              datas.forEach(function(data) {
+                var isMatch = false;
+                var hitCount = 0;
+                var searchTextCount = 0;
+                var title = data.title.trim();
+                var titleInLowerCase = title.toLowerCase();
+                var content = data.content.trim().replace(/<[^>]+>/g,"");
+                var contentInLowerCase = content.toLowerCase();
+                var articleUrl = decodeURIComponent(data.url);
+                var indexOfTitle = [];
+                var indexOfContent = [];
+                // only match articles with not empty titles
+                if(title != '') {
+                  keywords.forEach(function(keyword) {
+                    function getIndexByWord(word, text, caseSensitive) {
+                      var wordLen = word.length;
+                      if (wordLen === 0) {
+                        return [];
+                      }
+                      var startPosition = 0, position = [], index = [];
+                      if (!caseSensitive) {
+                        text = text.toLowerCase();
+                        word = word.toLowerCase();
+                      }
+                      while ((position = text.indexOf(word, startPosition)) > -1) {
+                        index.push({position: position, word: word});
+                        startPosition = position + wordLen;
+                      }
+                      return index;
+                    }
+
+                    indexOfTitle = indexOfTitle.concat(getIndexByWord(keyword, titleInLowerCase, false));
+                    indexOfContent = indexOfContent.concat(getIndexByWord(keyword, contentInLowerCase, false));
+                  });
+                  if (indexOfTitle.length > 0 || indexOfContent.length > 0) {
+                    isMatch = true;
+                    hitCount = indexOfTitle.length + indexOfContent.length;
+                  }
+                }
+
+                // show search results
+
+                if (isMatch) {
+                  // sort index by position of keyword
+
+                  [indexOfTitle, indexOfContent].forEach(function (index) {
+                    index.sort(function (itemLeft, itemRight) {
+                      if (itemRight.position !== itemLeft.position) {
+                        return itemRight.position - itemLeft.position;
+                      } else {
+                        return itemLeft.word.length - itemRight.word.length;
+                      }
+                    });
+                  });
+
+                  // merge hits into slices
+
+                  function mergeIntoSlice(text, start, end, index) {
+                    var item = index[index.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    var hits = [];
+                    var searchTextCountInSlice = 0;
+                    while (position + word.length <= end && index.length != 0) {
+                      if (word === searchText) {
+                        searchTextCountInSlice++;
+                      }
+                      hits.push({position: position, length: word.length});
+                      var wordEnd = position + word.length;
+
+                      // move to next position of hit
+
+                      index.pop();
+                      while (index.length != 0) {
+                        item = index[index.length - 1];
+                        position = item.position;
+                        word = item.word;
+                        if (wordEnd > position) {
+                          index.pop();
+                        } else {
+                          break;
+                        }
+                      }
+                    }
+                    searchTextCount += searchTextCountInSlice;
+                    return {
+                      hits: hits,
+                      start: start,
+                      end: end,
+                      searchTextCount: searchTextCountInSlice
+                    };
+                  }
+
+                  var slicesOfTitle = [];
+                  if (indexOfTitle.length != 0) {
+                    slicesOfTitle.push(mergeIntoSlice(title, 0, title.length, indexOfTitle));
+                  }
+
+                  var slicesOfContent = [];
+                  while (indexOfContent.length != 0) {
+                    var item = indexOfContent[indexOfContent.length - 1];
+                    var position = item.position;
+                    var word = item.word;
+                    // cut out 100 characters
+                    var start = position - 20;
+                    var end = position + 80;
+                    if(start < 0){
+                      start = 0;
+                    }
+                    if (end < position + word.length) {
+                      end = position + word.length;
+                    }
+                    if(end > content.length){
+                      end = content.length;
+                    }
+                    slicesOfContent.push(mergeIntoSlice(content, start, end, indexOfContent));
+                  }
+
+                  // sort slices in content by search text's count and hits' count
+
+                  slicesOfContent.sort(function (sliceLeft, sliceRight) {
+                    if (sliceLeft.searchTextCount !== sliceRight.searchTextCount) {
+                      return sliceRight.searchTextCount - sliceLeft.searchTextCount;
+                    } else if (sliceLeft.hits.length !== sliceRight.hits.length) {
+                      return sliceRight.hits.length - sliceLeft.hits.length;
+                    } else {
+                      return sliceLeft.start - sliceRight.start;
+                    }
+                  });
+
+                  // select top N slices in content
+
+                  var upperBound = parseInt('1');
+                  if (upperBound >= 0) {
+                    slicesOfContent = slicesOfContent.slice(0, upperBound);
+                  }
+
+                  // highlight title and content
+
+                  function highlightKeyword(text, slice) {
+                    var result = '';
+                    var prevEnd = slice.start;
+                    slice.hits.forEach(function (hit) {
+                      result += text.substring(prevEnd, hit.position);
+                      var end = hit.position + hit.length;
+                      result += '<b class="search-keyword">' + text.substring(hit.position, end) + '</b>';
+                      prevEnd = end;
+                    });
+                    result += text.substring(prevEnd, slice.end);
+                    return result;
+                  }
+
+                  var resultItem = '';
+
+                  if (slicesOfTitle.length != 0) {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + highlightKeyword(title, slicesOfTitle[0]) + "</a>";
+                  } else {
+                    resultItem += "<li><a href='" + articleUrl + "' class='search-result-title'>" + title + "</a>";
+                  }
+
+                  slicesOfContent.forEach(function (slice) {
+                    resultItem += "<a href='" + articleUrl + "'>" +
+                      "<p class=\"search-result\">" + highlightKeyword(content, slice) +
+                      "...</p>" + "</a>";
+                  });
+
+                  resultItem += "</li>";
+                  resultItems.push({
+                    item: resultItem,
+                    searchTextCount: searchTextCount,
+                    hitCount: hitCount,
+                    id: resultItems.length
+                  });
+                }
+              })
+            };
+            if (keywords.length === 1 && keywords[0] === "") {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-search fa-5x" /></div>'
+            } else if (resultItems.length === 0) {
+              resultContent.innerHTML = '<div id="no-result"><i class="fa fa-frown-o fa-5x" /></div>'
+            } else {
+              resultItems.sort(function (resultLeft, resultRight) {
+                if (resultLeft.searchTextCount !== resultRight.searchTextCount) {
+                  return resultRight.searchTextCount - resultLeft.searchTextCount;
+                } else if (resultLeft.hitCount !== resultRight.hitCount) {
+                  return resultRight.hitCount - resultLeft.hitCount;
+                } else {
+                  return resultRight.id - resultLeft.id;
+                }
+              });
+              var searchResultList = '<ul class=\"search-result-list\">';
+              resultItems.forEach(function (result) {
+                searchResultList += result.item;
+              })
+              searchResultList += "</ul>";
+              resultContent.innerHTML = searchResultList;
+            }
+          }
+
+          if ('auto' === 'auto') {
+            input.addEventListener('input', inputEventFunction);
+          } else {
+            $('.search-icon').click(inputEventFunction);
+            input.addEventListener('keypress', function (event) {
+              if (event.keyCode === 13) {
+                inputEventFunction();
+              }
+            });
+          }
+
+          // remove loading animation
+          $(".local-search-pop-overlay").remove();
+          $('body').css('overflow', '');
+
+          proceedsearch();
+        }
+      });
+    }
+
+    // handle and trigger popup window;
+    $('.popup-trigger').click(function(e) {
+      e.stopPropagation();
+      if (isfetched === false) {
+        searchFunc(path, 'local-search-input', 'local-search-result');
+      } else {
+        proceedsearch();
+      };
+    });
+
+    $('.popup-btn-close').click(onPopupClose);
+    $('.popup').click(function(e){
+      e.stopPropagation();
+    });
+    $(document).on('keyup', function (event) {
+      var shouldDismissSearchPopup = event.which === 27 &&
+        $('.search-popup').is(':visible');
+      if (shouldDismissSearchPopup) {
+        onPopupClose();
+      }
+    });
+  </script>
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+  
+  
+	<script type="text/javascript" src="//cdn.bootcss.com/canvas-nest.js/1.0.0/canvas-nest.min.js"></script>
+  
+  <!--<script type="text/javascript" src="/js/src/love.js"></script>-->
+  
+   <canvas class="fireworks" style="position: fixed;left: 0;top: 0;z-index: 1; pointer-events: none;"></canvas> 
+   <script type="text/javascript" src="//cdn.bootcss.com/animejs/2.2.0/anime.min.js"></script> 
+   <script type="text/javascript" src="/js/src/fireworks.js"></script>
+  
+</body>
+</html>
